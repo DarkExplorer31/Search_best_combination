@@ -1,5 +1,6 @@
 import os
 import csv
+import time
 
 MAX_WALLET = 500
 ALL_DATA = [
@@ -38,32 +39,60 @@ def import_data(file_path):
             ]
 
 
-def find_best_combination(data_from_csv):
+def find_positive_actions(data_from_csv):
     if not data_from_csv:
         return None
     # ('name','price','profit')
     positive_actions = []
-    best_combination = []
     for action in data_from_csv:
         if action[1] > 0:
-            positive_actions.append(action)
-    sorted_actions = sorted(
-        positive_actions, key=lambda data: -data[2] / data[1]
-    )
-    total_price = 0
-    for action in sorted_actions:
-        total_price += action[1]
-        if total_price > 500:
-            break
-        best_combination.append(action)
-    return best_combination
+            # need to convert price and profit by 100 to conserve it,
+            # because all numbers are float(), and need to have integers
+            positive_actions.append(
+                [action[0], int(action[1] * 100), int(action[2] * 100)]
+            )
+    return positive_actions
+
+
+def drawing_table(positive_actions):
+    # Drawing an empty table
+    table = [
+        [(0, []) for cell in range((MAX_WALLET * 100) + 1)]
+        for cell in range(len(positive_actions) + 1)
+    ]
+    for action in range(1, len(positive_actions) + 1):
+        for index in range(1, (MAX_WALLET * 100) + 1):
+            # if the buying price is less than current wallet capacity
+            if positive_actions[action - 1][1] <= index:
+                if (
+                    positive_actions[action - 1][2]
+                    + table[action - 1][
+                        index - positive_actions[action - 1][1]
+                    ][0]
+                    > table[action - 1][index][0]
+                ):
+                    table[action][index] = (
+                        positive_actions[action - 1][2]
+                        + table[action - 1][
+                            index - positive_actions[action - 1][1]
+                        ][0],
+                        [positive_actions[action - 1]]
+                        + table[action - 1][
+                            index - positive_actions[action - 1][1]
+                        ][1],
+                    )
+                else:
+                    table[action][index] = table[action - 1][index]
+            else:
+                table[action][index] = table[action - 1][index]
+    return table[-1][-1]
 
 
 def display_result(best_combination):
-    total_price = sum(value for _, value, _ in best_combination)
+    total_price = sum(value for _, value, _ in best_combination[1])
     print(
         "Pour un total de: "
-        + str(total_price)
+        + str(float(total_price) / 100)
         + " euros, vous pouvez acheté:\n"
     )
     total_profit = 0.0
@@ -71,17 +100,17 @@ def display_result(best_combination):
         action_name,
         price,
         profit,
-    ) in best_combination:
+    ) in best_combination[1]:
         print(
             "l'action: {}".format(action_name)
-            + " à {} ".format(price)
+            + " à {} ".format(float(price) / 100)
             + " euros pour un bénéfice de "
-            + "{} euros".format(profit)
+            + "{} euros".format(float(profit) / 100)
         )
-        total_profit += float(profit)
+        total_profit += float(profit / 100)
     print(
         "\nLe total de ces "
-        + str(len(best_combination))
+        + str(len(best_combination[1]))
         + " achats vous rapporterons: "
         + str(total_profit)
         + " euros."
@@ -99,10 +128,17 @@ def main():
         elif ask_to_run == "Y":
             path = ask_path()
             file = import_data(path)
-            best_combination = find_best_combination(file)
-            if not best_combination:
+            positive_actions = find_positive_actions(file)
+            if not positive_actions:
                 return None
+            starting_calculation = time.time()
+            best_combination = drawing_table(positive_actions)
             display_result(best_combination)
+            ending_calculation = time.time()
+            print(
+                "L'execution à durée: "
+                + str(ending_calculation - starting_calculation)
+            )
         else:
             print(ask_to_run + " n'est pas valide")
 
