@@ -36,7 +36,6 @@ def convert_profit_rate(all_action):
     return converted
 
 
-# On ne stock rien, doit renvoie juste des combinaisons
 def generate_all_combinations(all_action_converted):
     for combination_length in range(1, len(all_action_converted) + 1):
         for combination in itertools.combinations(
@@ -63,14 +62,14 @@ def compare_all_combinations(all_combination_converted):
 
 
 def display_action_to_buy(best_combination, best_profit):
-    print("La meilleure combinaison trouvée est:\n")
+    print("La meilleure combinaison est:\n")
     profit = int(best_profit)
     total_price = 0
     for action in best_combination:
         print(action[0])
         total_price += action[1]
     print(
-        "\nCette ensemble vous coutera: {} euros,".format(total_price)
+        "\nCet ensemble vous coûtera: {} euros,".format(total_price)
         + "\npour un bénéfice total de {} euros sur 2 ans".format(profit)
     )
 

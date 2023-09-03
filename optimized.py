@@ -12,8 +12,8 @@ ALL_DATA = [
 def ask_path():
     while True:
         path_to_import = input(
-            "Choisissez-le document à importer:"
-            + "\n-dataset1\n-dataset2\n\n(1/2/q)> "
+            "Choisissez le document à importer:"
+            + "\n-dataset1.csv\n-dataset2.csv\n\n(1/2/q)> "
         ).upper()
         if path_to_import == "1":
             return ALL_DATA[0]
@@ -54,38 +54,47 @@ def find_positive_actions(data_from_csv):
     return positive_actions
 
 
-def drawing_table(positive_actions):
-    # Drawing an empty table
-    table = [
-        [(0, []) for cell in range((MAX_WALLET * 100) + 1)]
-        for cell in range(len(positive_actions) + 1)
+def etablish_matrix(positive_actions, wallet, number_of_actions):
+    # Drawing an empty matrix
+    matrix = [
+        [0 for _ in range(wallet + 1)] for _ in range(number_of_actions + 1)
     ]
-    for action in range(1, len(positive_actions) + 1):
-        for index in range(1, (MAX_WALLET * 100) + 1):
+    for action_idx in range(0, number_of_actions + 1):
+        for capacity in range(0, wallet + 1):
             # if the buying price is less than current wallet capacity
-            if positive_actions[action - 1][1] <= index:
-                if (
-                    positive_actions[action - 1][2]
-                    + table[action - 1][
-                        index - positive_actions[action - 1][1]
-                    ][0]
-                    > table[action - 1][index][0]
-                ):
-                    table[action][index] = (
-                        positive_actions[action - 1][2]
-                        + table[action - 1][
-                            index - positive_actions[action - 1][1]
-                        ][0],
-                        [positive_actions[action - 1]]
-                        + table[action - 1][
-                            index - positive_actions[action - 1][1]
-                        ][1],
-                    )
-                else:
-                    table[action][index] = table[action - 1][index]
+            if positive_actions[action_idx - 1][1] <= capacity:
+                matrix[action_idx][capacity] = max(
+                    positive_actions[action_idx - 1][2]
+                    + matrix[action_idx - 1][
+                        capacity - int(positive_actions[action_idx - 1][1])
+                    ],
+                    matrix[action_idx - 1][capacity],
+                )
             else:
-                table[action][index] = table[action - 1][index]
-    return table[-1][-1]
+                matrix[action_idx][capacity] = matrix[action_idx - 1][capacity]
+    return matrix
+
+
+def find_best_combination(positive_actions):
+    recalulating_wallet = MAX_WALLET * 100
+    total_of_actions = len(positive_actions)
+    matrix = etablish_matrix(
+        positive_actions, recalulating_wallet, total_of_actions
+    )
+    best_combination = []
+    while recalulating_wallet >= 0 and total_of_actions >= 0:
+        combination = positive_actions[total_of_actions - 1]
+        if (
+            matrix[total_of_actions][recalulating_wallet]
+            == matrix[total_of_actions - 1][
+                recalulating_wallet - combination[1]
+            ]
+            + combination[2]
+        ):
+            best_combination.append(combination)
+            recalulating_wallet -= combination[1]
+        total_of_actions -= 1
+    return (matrix[-1][-1], best_combination)
 
 
 def display_result(best_combination):
@@ -93,7 +102,7 @@ def display_result(best_combination):
     print(
         "Pour un total de: "
         + str(float(total_price) / 100)
-        + " euros, vous pouvez acheté:\n"
+        + " euros, vous pouvez acheter:\n"
     )
     total_profit = 0.0
     for (
@@ -103,7 +112,7 @@ def display_result(best_combination):
     ) in best_combination[1]:
         print(
             "l'action: {}".format(action_name)
-            + " à {} ".format(float(price) / 100)
+            + " a {}".format(float(price) / 100)
             + " euros pour un bénéfice de "
             + "{} euros".format(float(profit) / 100)
         )
@@ -132,12 +141,13 @@ def main():
             if not positive_actions:
                 return None
             starting_calculation = time.time()
-            best_combination = drawing_table(positive_actions)
+            best_combination = find_best_combination(positive_actions)
             display_result(best_combination)
             ending_calculation = time.time()
             print(
                 "L'execution à durée: "
                 + str(ending_calculation - starting_calculation)
+                + " secondes."
             )
         else:
             print(ask_to_run + " n'est pas valide")
