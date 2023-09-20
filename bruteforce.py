@@ -51,13 +51,16 @@ def generate_all_combinations(all_action_converted):
 def compare_all_combinations(all_combination_converted):
     best_combination = None
     best_profit = 0
+    combo = 0
     for combination in generate_all_combinations(all_combination_converted):
+        combo += 1
         profits = 0.0
         for action in combination:
             profits += action[2]
         if profits > best_profit:
             best_combination = combination
             best_profit = profits
+    print(combo)
     return best_combination, best_profit
 
 

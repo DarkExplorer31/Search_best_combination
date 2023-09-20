@@ -34,7 +34,7 @@ def import_data(file_path):
             csv_reader = csv.reader(csvfile)
             next(csv_reader)
             return [
-                (name, float(value), float(profit))
+                (name, float(value), (float(profit) * float(value) / 100))
                 for name, value, profit in csv_reader
             ]
 
